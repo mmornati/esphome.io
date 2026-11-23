@@ -24,6 +24,8 @@ Available platforms:
    via `esphome upload`/`esphome run` with `--ota-platform web_server` (see the
    [Web Server OTA](/components/ota/web_server/#using-the-command-line) page)
 - [**zephyr_mcumgr**](/components/ota/zephyr_mcumgr/): Enable firmware upload support for the `nRF52` platform with MCUboot
+- [**zigbee**](/components/ota/zigbee/): Receive firmware updates over Zigbee from the coordinator (Zigbee2MQTT, ZHA)
+  on `ESP32`
 
 ```yaml
 # Example configuration entry
@@ -170,5 +172,6 @@ expected. This is automatically enabled by the `ota` component, but it may be di
 - [OTA Update via HTTP Request](/components/ota/http_request/)
 - [Web Server OTA Updates](/components/ota/web_server/)
 - [nRF52 Firmware Updates](/components/ota/zephyr_mcumgr/)
+- [Zigbee OTA Updates](/components/ota/zigbee/)
 - [Safe Mode](/components/safe_mode/)
 - <APIRef text="ota_backend.h" path="ota/ota_backend.h" />

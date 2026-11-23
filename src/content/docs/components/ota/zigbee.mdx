@@ -1,0 +1,132 @@
+---
+description: "Instructions for setting up firmware updates over Zigbee for ESPHome's ESP32 Zigbee devices."
+title: "Zigbee OTA Updates"
+---
+import APIRef from '@components/APIRef.astro';
+
+The Zigbee OTA platform lets a device that uses the [Zigbee](/components/zigbee/) component on `ESP32` receive new
+firmware over the Zigbee network. The Zigbee coordinator software, for example Zigbee2MQTT or ZHA, acts as the OTA
+server and sends the firmware to the device in small blocks, as it does for other Zigbee devices.
+
+The device writes the firmware through the same backend as the other OTA platforms, so
+[Safe Mode](/components/safe_mode/) and the rollback to the previous firmware work in the same way.
+
+```yaml
+# Example configuration entry
+zigbee:
+  manufacturer_code: 0x1234
+
+ota:
+  - platform: zigbee
+    image_type: 0x0101
+```
+
+> [!NOTE]
+> An update over Zigbee is slow. With the usual block size of 50 bytes, a 360 kB file takes about 30 minutes. The
+> device keeps working during the download.
+
+## Configuration variables
+
+- **image_type** (**Required**, int): The image type of this kind of device, in the range `0x0000` to `0xFFBF`. The
+  OTA server offers a file to every device that has the same manufacturer code and image type, so give each kind of
+  device its own value.
+- **file_version** (*Optional*, int): The version of the firmware, a 32-bit number. The OTA server only offers a file
+  with a higher version than the one the device runs. Defaults to the time of the build, so every build is newer
+  than the one before.
+- **endpoint** (*Optional*, int): The Zigbee endpoint that gets the OTA cluster, in the range `1` to `240`. Defaults
+  to the first endpoint.
+- **block_size** (*Optional*, int): The largest block the device asks for, in bytes, in the range `16` to `254`. The
+  server may send less. Larger blocks may not arrive on a path through routers. Defaults to `50`.
+- **compress** (*Optional*, boolean): Compress the firmware inside the OTA file. The file is then about 60 % of the
+  size, and the device unpacks it while it downloads. Defaults to `true`.
+- **confirm_timeout** (*Optional*, [Time](/guides/configuration-types/#time)): After an update the new firmware is
+  kept only once the device has joined the Zigbee network again. If it has not joined within this time, the device
+  goes back to the previous firmware. This needs [Safe Mode](/components/safe_mode/) and `enable_ota_rollback` in
+  the [ESP32 advanced options](/components/esp32/#advanced-configuration). Set it to `0s` to leave the decision to
+  safe mode alone. Defaults to `10min`.
+- **id** (*Optional*, [ID](/guides/configuration-types/#id)): Manually specify the ID used for code generation.
+- **zigbee_id** (*Optional*, [ID](/guides/configuration-types/#id)): The ID of the `zigbee` component.
+- All [automations](/automations) supported by [Ota](/components/ota/).
+
+The manufacturer code of the firmware is set with `manufacturer_code` in the [Zigbee](/components/zigbee/)
+component.
+
+## The OTA file
+
+Every build writes `firmware.zigbee.ota` next to `firmware.ota.bin` in the build folder. The ESPHome dashboard offers
+it as the download "Zigbee OTA format". This is the file to give to the OTA server. It holds the manufacturer code,
+the image type and the file version from the configuration.
+
+## Signed firmware
+
+The OTA server chooses a file by manufacturer code and image type only, and other devices may use the same values.
+To make sure that a device only installs firmware meant for it, enable
+[signed OTA verification](/components/esp32/#signed-ota-verification). ESPHome prints a warning during the build when
+it is not enabled.
+
+```yaml
+esp32:
+  framework:
+    type: esp-idf
+    advanced:
+      signed_ota_verification:
+        signing_scheme: ecdsa256
+        signing_key: ota_signing_key.pem
+
+ota:
+  - platform: zigbee
+    image_type: 0x0101
+```
+
+With a `signing_key`, the OTA file already holds the signed firmware. If you sign the firmware outside the build,
+the OTA file has to be made again from the signed firmware; the build prints the command for this.
+
+The signature is checked at the end of the download, before the device restarts.
+
+## Sending an update
+
+### Zigbee2MQTT
+
+Zigbee2MQTT reads the available firmware files from an index, a JSON file whose location is set with
+`ota.zigbee_ota_override_index_location` in its configuration. Add an entry for the OTA file:
+
+```json
+[
+  {
+    "fileVersion": 1764000000,
+    "fileSize": 361082,
+    "manufacturerCode": 4660,
+    "imageType": 257,
+    "sha512": "<SHA-512 of the file>",
+    "url": "http://example.com/firmware.zigbee.ota"
+  }
+]
+```
+
+The update then shows up for the device in Zigbee2MQTT and as an update entity in Home Assistant.
+
+### ZHA
+
+ZHA needs to be told where to find the OTA file, see the OTA section of the
+[ZHA documentation](https://www.home-assistant.io/integrations/zha/). The update then shows up as an update entity
+in Home Assistant.
+
+## Automations
+
+```yaml
+ota:
+  - platform: zigbee
+    image_type: 0x0101
+    on_progress:
+      - logger.log:
+          format: "Zigbee OTA %.0f%%"
+          args: ["x"]
+```
+
+## See Also
+
+- [Over-the-Air Updates](/components/ota/)
+- [Zigbee](/components/zigbee/)
+- [Safe Mode](/components/safe_mode/)
+- [ESP32 Platform](/components/esp32/)
+- <APIRef text="zigbee_ota_esp32.h" path="zigbee/ota/zigbee_ota_esp32.h" />

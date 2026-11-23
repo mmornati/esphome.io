@@ -80,6 +80,10 @@ zigbee:
   to provide your own converter/quirks as it might break some default handling in ZHA or Zigbee2MQTT. Maximum
   length is 31 ASCII characters. Defaults to `esphome`.
 
+- **manufacturer_code** (*Optional*, int): The 16-bit Zigbee manufacturer code of the device. It is used in the
+  node descriptor and for [firmware updates over Zigbee](/components/ota/zigbee/). Without it the node descriptor
+  keeps the Zigbee stack's default and firmware updates use `0`. `ESP32` only.
+
 - **on_start** (*Optional*, [Automation](/automations/#automation)): Automation to run when the Zigbee stack is fully
   initialized and can be interacted with. It will then try to (re-)join a network.
 
@@ -261,5 +265,6 @@ and present_value attributes. On `ESP32` additionally the application type attri
 
 ## See Also
 
+- [Zigbee OTA Updates](/components/ota/zigbee/)
 - [Zigbee2MQTT](https://www.zigbee2mqtt.io/)
 - [Zigbee Home Automation](https://www.home-assistant.io/integrations/zha/)
